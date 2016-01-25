@@ -5,9 +5,9 @@ import sh
 git = sh.git.bake('--no-pager')
 
 def tagMatches(tag):
-	import re
-	regexp = re.compile('^[0-9]+\.[0-9]+\.[0-9]+')
-	return bool(regexp.match(tag))
+    import re
+    regexp = re.compile('^[0-9]+\.[0-9]+\.[0-9]+')
+    return bool(regexp.match(tag))
 
 def getCheckedOutBranch():
     return git('rev-parse', '--abbrev-ref', 'HEAD').strip()
@@ -17,18 +17,18 @@ def getStartingCommit(branch):
     return startCommit
 
 def getLastTag(commit):
-	i = 0
-	while True:
-		lastTag = git('describe', '--abbrev=0', '--tags', '%s^1~%i' % (commit, i)).strip()
-		if tagMatches(lastTag):
-			print 'Last annotated tag is: %s' % lastTag
-			break
-		else:
-			i += 1
+    i = 0
+    while True:
+        lastTag = git('describe', '--abbrev=0', '--tags', '%s^1~%i' % (commit, i)).strip()
+        if tagMatches(lastTag):
+            print 'Last annotated tag is: %s' % lastTag
+            break
+        else:
+            i += 1
 
 def run():
-	branch = getCheckedOutBranch()
-	startCommit = getStartingCommit(branch)
-	getLastTag(startCommit)
+    branch = getCheckedOutBranch()
+    startCommit = getStartingCommit(branch)
+    getLastTag(startCommit)
 
 run()
