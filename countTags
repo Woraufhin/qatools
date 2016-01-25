@@ -1,0 +1,44 @@
+#!/bin/bash
+
+function run() {
+	count=0
+	total=$(wc -l /dev/stdin | egrep -o "[0-9]+")
+	printf '\e[1;92m%s:\e[0m %5d\n' 'Total tests in file' "$total"
+	touch /tmp/testsWithTags.txt
+	DONE=false
+	until $DONE
+	do
+		read line || DONE=true
+		try=$(grep -Hri '^//Tags:' "$line" 2>/dev/null )
+		if [ ! -z "${try// }" ]; then
+			count=$(($count+1))
+			echo $line >> /tmp/testsWithTags.txt
+			printf '\r\e[1;92m%s:\e[0m %5d' "Total tests with tags" "$count"
+		fi
+	done < /dev/stdin
+	printf '\n%s\n' 'A file was created in /tmp/testsWithTags.txt'
+}
+
+function wrapRun() {
+	if [ -f '/tmp/testsWithTags.txt' ]; then
+		rm -f /tmp/testsWithTags.txt
+	fi
+	run
+}
+
+function howto() {
+	echo -e "\e[1;92mTag counter\e[0m"
+	echo "Description:"
+	echo "      Tool that counts which and how many tests have tags. Recieves"
+	echo "      from stdin a list of tests with full path and creates a tmp"
+	echo "      file with list of tagged tests"
+	echo "Usage:"
+	echo "      countTags < pathToListOfTests"
+}
+
+if [ -t 0 ]; then
+	howto
+else
+	wrapRun
+fi
+
