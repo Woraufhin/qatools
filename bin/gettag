@@ -4,7 +4,7 @@ import sh
 
 git = sh.git.bake('--no-pager')
 
-def isIatsOfficialAnnotatedTag(tag):
+def tagMatches(tag):
 	import re
 	regexp = re.compile('^[0-9]+\.[0-9]+\.[0-9]+')
 	return bool(regexp.match(tag))
@@ -20,7 +20,7 @@ def getLastTag(commit):
 	i = 0
 	while True:
 		lastTag = git('describe', '--abbrev=0', '--tags', '%s^1~%i' % (commit, i)).strip()
-		if isIatsOfficialAnnotatedTag(lastTag):
+		if tagMatches(lastTag):
 			print 'Last annotated tag is: %s' % lastTag
 			break
 		else:
