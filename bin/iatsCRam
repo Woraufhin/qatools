@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+
+import sh
+import os
+import argparse
+from sh import gitk
+
+git = sh.git.bake('--no-pager')
+parser = argparse.ArgumentParser(
+    description='Show commits that were introduced in specified merged branch. Won\'t work for submodules (yet).'
+)
+parser.add_argument(
+    '-k', action='store_true', default=False,
+    dest='gitkgui',
+    help='Open diff in gitk GUI'
+)
+parser.add_argument(
+    'branch', default=None, nargs='?',
+    help='An existing or deleted merged branch. If not specified, it will use the one checked out in current repository.'
+)
+results = parser.parse_args()
+
+def wrapRun(func):
+    try:
+        path = git('rev-parse', '--show-toplevel').strip()
+        os.chdir(str(path))
+    except sh.ErrorReturnCode:
+        print '\033[1;91mFatal: Not in a git repository\033[0m'
+        exit(1)
+    if os.path.isfile('./.git') or os.path.isdir('./.git'):
+        return func()
+
+def isMainBranch(branch):
+    mainBranch = ['master', 'alpha', 'beta', 'stable']
+    return branch in mainBranch
+
+def getCheckedOutBranch():
+    return git('rev-parse', '--abbrev-ref', 'HEAD').strip()
+
+def checkCurrentBranch():
+    currentBranch = getCheckedOutBranch()
+    if not isMainBranch(currentBranch):
+        print '\033[1;91mFatal: please checkout to a main branch\033[0m'
+        exit(1)
+
+def getBranch():
+    if results.branch is None:
+        print '\033[1;91mFatal: specify a branch\033[0m'
+        exit(1)
+    else:
+        branch = results.branch
+        return branch
+
+def getStartingSha(branch):
+    startCommit = git.log('--pretty=%H', '--grep', 'NEW BRANCH: %s' % branch).strip()
+    if startCommit == '':
+        print '\033[1;91mFatal: ambiguous argument \'%s\'\033[0m' % branch
+        exit(1)
+    return startCommit
+
+def getEndingSha(branch):
+    endCommit = git.log('--pretty=%H', '--grep', 'Merge.*origin/%s' % branch).strip()
+    if endCommit == '':
+        print '\033[1;91mBranch %s is not merged, use iatsCR instead\033[0m' % branch
+        exit(1)
+    return endCommit
+
+def display(startCommit, endCommit):
+    args = ['--first-parent', '%s..%s^2' % (startCommit, endCommit)]
+    if results.gitkgui:
+        gitk(args)
+    else:
+        print git.log('--pretty=oneline', args).strip()
+
+@wrapRun
+def run():
+    checkCurrentBranch()
+    branch = getBranch()
+    sc, ec = getStartingSha(branch), getEndingSha(branch)
+    display(sc, ec)

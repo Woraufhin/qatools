@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import sh
+
+git = sh.git.bake('--no-pager')
+
+def isIatsOfficialAnnotatedTag(tag):
+	import re
+	regexp = re.compile('^[0-9]+\.[0-9]+\.[0-9]+')
+	return bool(regexp.match(tag))
+
+def getCheckedOutBranch():
+    return git('rev-parse', '--abbrev-ref', 'HEAD').strip()
+
+def getStartingCommit(branch):
+    startCommit = git.log('--pretty=%H', '--grep', 'NEW BRANCH: %s' % branch).strip()
+    return startCommit
+
+def getLastTag(commit):
+	i = 0
+	while True:
+		lastTag = git('describe', '--abbrev=0', '--tags', '%s^1~%i' % (commit, i)).strip()
+		if isIatsOfficialAnnotatedTag(lastTag):
+			print 'Last annotated tag is: %s' % lastTag
+			break
+		else:
+			i += 1
+
+def run():
+	branch = getCheckedOutBranch()
+	startCommit = getStartingCommit(branch)
+	getLastTag(startCommit)
+
+run()
