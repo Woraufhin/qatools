@@ -1,0 +1,3 @@
+bin/iatsCRam usr/bin
+bin/gettag usr/bin
+bin/countTags usr/bin

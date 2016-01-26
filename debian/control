@@ -1,0 +1,11 @@
+Source: qatools
+Maintainer: Juan Schandin <jschandin@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 5)
+
+Package: qatools
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: qa tools to interact easier with git and other gems
