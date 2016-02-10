@@ -59,11 +59,11 @@ def getStartingSha(branch):
     return startCommit
 
 def getEndingSha(branch):
-    endCommit = git.log('--pretty=%H', '--grep', 'Merge.*origin/%s' % branch).strip()
+    endCommit = git.log('--pretty=%H', '--grep', 'Merge.*origin/%s' % branch).strip().split('\n')
     if endCommit == '':
         print '\033[1;91mBranch %s is not merged, use iatsCR instead\033[0m' % branch
         exit(1)
-    return endCommit
+    return endCommit[-1]
 
 def display(startCommit, endCommit):
     args = ['--first-parent', '%s..%s^2' % (startCommit, endCommit)]
