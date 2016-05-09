@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+import sh
+import os
+import re
+import argparse
+from sh import gitk
+
+git = sh.git.bake('--no-pager')
+parser = argparse.ArgumentParser(
+    description='Returns commit before merge of specified branch'
+)
+parser.add_argument(
+    '-v', action='store_true', default=False,
+    dest='verbose',
+    help='Verbose'
+)
+parser.add_argument(
+    'branch', default=None, nargs='?',
+    help='An existing or deleted merged branch.'
+)
+results = parser.parse_args()
+
+def wrapRun(func):
+    try:
+        path = git('rev-parse', '--show-toplevel').strip()
+        os.chdir(str(path))
+    except sh.ErrorReturnCode:
+        print '\033[1;91mFatal: Not in a git repository\033[0m'
+        exit(1)
+    if os.path.isfile('./.git') or os.path.isdir('./.git'):
+        return func()
+
+def get_branch():
+    if results.branch is None:
+        print '\033[1;91mFatal: specify a branch\033[0m'
+        exit(1)
+    else:
+        branch = results.branch
+        return branch
+
+def hypothesize_main_branch(branch):
+    regexp = r"(Alpha|Beta|Stable)"
+    match = re.search(regexp, branch)
+    guess = 'master' if match is None else match.group(0).lower()
+    return guess
+
+def get_commit_where_merged(branch):
+    main_branch = hypothesize_main_branch(branch)
+    commit_where_merged = git.log('--pretty=%h', '--grep', 'Merging branch.*into %s containing branches %s' % (main_branch, branch)).strip()
+    if commit_where_merged == '':
+        print '\033[1;91mBranch %s is not merged, use iatsCR instead\033[0m' % branch
+        exit(1)
+    return commit_where_merged
+
+def get_commit_before_merge(commit_where_merged):
+    commit_before_merge = git.log('--first-parent', '--pretty=%h', '%s~1' % commit_where_merged, '-1').strip()
+    return commit_before_merge
+
+
+def display(commit_where_merged, commit_before_merge):
+    print '\033[34mMerged in:\033[0m', commit_where_merged
+    print '\033[34mCommit before:\033[0m', commit_before_merge
+
+@wrapRun
+def run():
+    branch = get_branch()
+    commit_where_merged = get_commit_where_merged(branch)
+    commit_before_merge = get_commit_before_merge(commit_where_merged)
+    display(commit_where_merged, commit_before_merge)
