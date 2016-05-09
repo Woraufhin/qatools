@@ -40,7 +40,7 @@ def get_branch():
         return branch
 
 def hypothesize_main_branch(branch):
-    regexp = r"(Alpha|Beta|Stable)"
+    regexp = r"(Alpha|Beta|Stable)$"
     guess = re.search(regexp, branch)
     return 'master' if guess is None else guess.group(0).lower()
 
