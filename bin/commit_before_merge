@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '-v', action='store_true', default=False,
     dest='verbose',
-    help='Verbose'
+    help='Verbose. Prints date of commits and summary'
 )
 parser.add_argument(
     'branch', default=None, nargs='?',
@@ -41,24 +41,27 @@ def get_branch():
 
 def hypothesize_main_branch(branch):
     regexp = r"(Alpha|Beta|Stable)"
-    match = re.search(regexp, branch)
-    guess = 'master' if match is None else match.group(0).lower()
-    return guess
+    guess = re.search(regexp, branch)
+    return 'master' if guess is None else guess.group(0).lower()
 
 def get_commit_where_merged(branch):
     main_branch = hypothesize_main_branch(branch)
-    commit_where_merged = git.log('--pretty=%h', '--grep', 'Merging branch.*into %s containing branches %s' % (main_branch, branch)).strip()
+    commit_where_merged = git.log('--pretty=%h %ad %s', '--grep', 'Merging branch.*into %s containing branches %s' % (main_branch, branch)).strip()
     if commit_where_merged == '':
-        print '\033[1;91mBranch %s is not merged, use iatsCR instead\033[0m' % branch
+        print '\033[1;91mBranch %s is not merged or doesn\'t exist\033[0m' % branch
         exit(1)
     return commit_where_merged
 
 def get_commit_before_merge(commit_where_merged):
-    commit_before_merge = git.log('--first-parent', '--pretty=%h', '%s~1' % commit_where_merged, '-1').strip()
+    sha = commit_where_merged.split(' ')[0]
+    commit_before_merge = git.log('--first-parent', '--pretty=%h %ad %s', '%s~1' % sha, '-1').strip()
     return commit_before_merge
 
 
-def display(commit_where_merged, commit_before_merge):
+def display(commit_where_merged, commit_before_merge, verbose):
+    if not verbose:
+        commit_where_merged = commit_where_merged.split(' ')[0]
+        commit_before_merge = commit_before_merge.split(' ')[0]
     print '\033[34mMerged in:\033[0m', commit_where_merged
     print '\033[34mCommit before:\033[0m', commit_before_merge
 
@@ -67,4 +70,4 @@ def run():
     branch = get_branch()
     commit_where_merged = get_commit_where_merged(branch)
     commit_before_merge = get_commit_before_merge(commit_where_merged)
-    display(commit_where_merged, commit_before_merge)
+    display(commit_where_merged, commit_before_merge, results.verbose)
