@@ -1,0 +1,52 @@
+#!/bin/bash
+
+readonly main_branches="master alpha beta stable"
+readonly iats_path=${HOME}/www/iats/code
+
+function usage() {
+    cat <<EOF
+Usage:
+    ${0##*/} [--help|-h] [options]
+
+Description:
+    iats versions: cat versioninfo in remote main branches
+
+Options:
+    -f|--fetch: fetch before checking versions
+
+EOF
+}
+
+function parse_version() {
+    local branch=$1
+    git cat-file -p origin/$branch:versioninfo
+}
+
+function run() {
+    local main_branch
+    for main_branch in $main_branches; do
+        echo -ne "\e[34m$main_branch:\e[0m "; parse_version $main_branch
+    done
+}
+
+function fetch() {
+    local main_branch
+    for main_branch in $main_branches; do
+        git fetch -q origin $main_branch
+    done
+}
+
+if [[ ${1:-} =~ ^(-h|--help)$ ]]; then
+    usage
+    exit 0
+fi
+
+if [ $PWD != $iats_path ]; then
+    cd $iats_path
+fi
+
+if [[ $1 =~ ^(-f|--fetch)$ ]]; then
+    fetch
+fi
+
+run
